@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpotTheShift — Urban Evolution Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js"></script>
+<style>
+:root{
+  --ink:#1a1a14;--ink2:#111110;--paper:#f4f0e6;
+  --moss:#2d4a1e;--lime:#8ab840;--lime-b:#a8d44e;
+  --amber:#c17b2e;--amber-l:#e09840;
+  --muted:#6b6555;--border:rgba(244,240,230,0.09);
+  --font-head:'Syne',sans-serif;
+  --font-mono:'Space Mono',monospace;
+  --font-body:'Lora',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--ink);color:var(--paper);font-family:var(--font-body);font-size:16px;line-height:1.7;}
+
+/* ── NAV ── */
+#nav{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  height:58px;
+  background:rgba(17,17,16,0.96);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(138,184,64,0.18);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;
+}
+.nav-logo{
+  font-family:var(--font-head);font-weight:800;font-size:1.15rem;
+  letter-spacing:-0.03em;color:var(--lime-b);text-decoration:none;cursor:pointer;
+}
+.nav-logo span{color:rgba(244,240,230,0.35);}
+.nav-links{display:flex;gap:0.25rem;align-items:center;}
+.nav-btn{
+  background:transparent;border:none;
+  color:rgba(244,240,230,0.55);
+  font-family:var(--font-mono);font-size:0.72rem;
+  letter-spacing:0.07em;text-transform:uppercase;
+  padding:0.4rem 0.9rem;border-radius:2px;cursor:pointer;
+  transition:color 0.18s,background 0.18s;
+}
+.nav-btn:hover{color:var(--paper);background:rgba(255,255,255,0.05);}
+.nav-btn.active{color:var(--lime-b);background:rgba(138,184,64,0.1);border:1px solid rgba(138,184,64,0.22);}
+
+/* ── PAGE SHELL ── */
+#shell{position:fixed;top:58px;left:0;right:0;bottom:0;overflow:hidden;}
+.page{
+  position:absolute;inset:0;
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.35s ease;
+}
+.page.active{opacity:1;pointer-events:all;}
+.page::-webkit-scrollbar{width:4px;}
+.page::-webkit-scrollbar-track{background:transparent;}
+.page::-webkit-scrollbar-thumb{background:rgba(138,184,64,0.2);}
+
+/* ══════════════════════════════
+   HOME PAGE
+══════════════════════════════ */
+#home-hero{
+  min-height:100%;display:grid;grid-template-columns:1fr 1fr;
+  position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 65% 70% at 68% 55%,rgba(45,74,30,0.38) 0%,transparent 70%),
+             radial-gradient(ellipse 35% 50% at 92% 10%,rgba(138,184,64,0.07) 0%,transparent 60%);
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(138,184,64,0.035) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(138,184,64,0.035) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+.hero-left{
+  padding:5rem 3rem 3rem;
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;z-index:2;
+}
+.eyebrow{
+  font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--lime);margin-bottom:1.5rem;
+  display:flex;align-items:center;gap:0.75rem;
+}
+.eyebrow::before{content:'';display:block;width:26px;height:1px;background:var(--lime);}
+h1{
+  font-family:var(--font-head);font-weight:800;
+  font-size:clamp(3.2rem,6.5vw,5.8rem);
+  line-height:0.93;letter-spacing:-0.04em;margin-bottom:1.5rem;
+}
+h1 .word-shift{color:var(--amber-l);}
+.hero-desc{
+  font-size:1.02rem;line-height:1.85;
+  color:rgba(244,240,230,0.75);max-width:460px;margin-bottom:2.5rem;
+}
+.hero-actions{display:flex;gap:0.85rem;flex-wrap:wrap;}
+.btn-p{
+  background:var(--lime);color:var(--ink);border:none;
+  padding:0.8rem 1.8rem;font-family:var(--font-head);font-weight:700;
+  font-size:0.88rem;cursor:pointer;border-radius:2px;
+  transition:background 0.18s,transform 0.1s;text-decoration:none;display:inline-block;
+}
+.btn-p:hover{background:var(--lime-b);}
+.btn-o{
+  background:transparent;color:var(--paper);
+  border:1px solid rgba(244,240,230,0.22);
+  padding:0.8rem 1.8rem;font-family:var(--font-head);font-weight:600;
+  font-size:0.88rem;cursor:pointer;border-radius:2px;
+  transition:border-color 0.18s,background 0.18s;text-decoration:none;display:inline-block;
+}
+.btn-o:hover{border-color:var(--lime);background:rgba(138,184,64,0.07);}
+.hero-right{
+  position:relative;z-index:2;
+  display:flex;align-items:center;padding:3rem;
+}
+.live-card{
+  background:rgba(45,74,30,0.3);
+  border:1px solid rgba(138,184,64,0.22);
+  border-radius:4px;padding:1.75rem;width:100%;max-width:370px;
+}
+.live-card h3{
+  font-family:var(--font-mono);font-size:0.68rem;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--lime);margin-bottom:1.4rem;
+}
+.stat-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:0.65rem 0;border-bottom:1px solid rgba(244,240,230,0.07);
+}
+.stat-row:last-child{border-bottom:none;}
+.sl{font-family:var(--font-mono);font-size:0.72rem;color:rgba(244,240,230,0.5);}
+.sv{font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--lime-b);}
+.sbadge{
+  font-family:var(--font-mono);font-size:0.6rem;padding:2px 6px;border-radius:2px;
+  margin-left:0.4rem;
+}
+.sup{background:rgba(138,184,64,0.18);color:var(--lime);}
+.sdn{background:rgba(192,57,43,0.18);color:#e07070;}
+.scrit{background:rgba(230, 126, 34,0.18);color:#e67e22;}
+
+/* home sections */
+.home-section{max-width:1140px;margin:0 auto;padding:5rem 2.5rem;}
+.sec-label{
+  font-family:var(--font-mono);font-size:0.67rem;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--lime);margin-bottom:0.85rem;
+  display:flex;align-items:center;gap:0.6rem;
+}
+.sec-label::before{content:'';display:block;width:18px;height:1px;background:var(--lime);}
+h2{font-family:var(--font-head);font-weight:700;font-size:clamp(1.9rem,3.8vw,2.9rem);letter-spacing:-0.03em;line-height:1.1;margin-bottom:0.85rem;}
+.sec-intro{color:rgba(244,240,230,0.65);max-width:620px;margin-bottom:2.5rem;font-size:0.97rem;}
+.species-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:1.3rem;}
+.sp-card{
+  background:rgba(45,74,30,0.14);border:1px solid rgba(138,184,64,0.13);
+  border-radius:4px;overflow:hidden;cursor:pointer;
+  transition:border-color 0.2s,background 0.2s;
+}
+.sp-card:hover{border-color:rgba(138,184,64,0.35);background:rgba(45,74,30,0.24);}
+.sp-card-head{
+  padding:1.1rem 1.3rem 0.9rem;
+  border-bottom:1px solid rgba(244,240,230,0.055);
+  display:flex;justify-content:space-between;align-items:flex-start;
+}
+.sp-icon{font-size:2rem;line-height:1;margin-bottom:0.4rem;}
+.sp-name{font-family:var(--font-head);font-weight:700;font-size:1rem;}
+.sp-lat{font-style:italic;font-size:0.75rem;color:rgba(244,240,230,0.42);font-family:var(--font-body);}
+.sp-badge{
+  font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;
+  text-transform:uppercase;padding:3px 7px;border-radius:2px;white-space:nowrap;
+}
+.bc{background:rgba(138,184,64,0.18);color:var(--lime);border:1px solid rgba(138,184,64,0.28);}
+.bt{background:rgba(36,113,163,0.18);color:#6ab0db;border:1px solid rgba(36,113,163,0.28);}
+.sp-card-body{padding:1.1rem 1.3rem;}
+.trait-list{list-style:none;}
+.trait-item{
+  padding:0.45rem 0;border-bottom:1px solid rgba(244,240,230,0.055);
+  display:flex;justify-content:space-between;align-items:center;gap:0.8rem;
+}
+.trait-item:last-child{border-bottom:none;}
+.tl{font-family:var(--font-mono);font-size:0.68rem;color:rgba(244,240,230,0.45);}
+.tw{flex:1;height:3px;background:rgba(244,240,230,0.08);border-radius:2px;overflow:hidden;}
+.tb{height:100%;border-radius:2px;background:var(--lime);}
+.tb.a{background:var(--amber-l);}
+.tb.b{background:#6ab0db;}
+.td{font-family:var(--font-mono);font-size:0.68rem;min-width:50px;text-align:right;}
+.tpos{color:var(--lime);}
+.tneg{color:#e07070;}
+.sp-src{
+  padding:0.65rem 1.3rem;background:rgba(0,0,0,0.14);
+  font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.3);
+}
+
+/* chart section */
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));gap:1.3rem;margin-top:1.5rem;}
+.chart-card{
+  background:rgba(45,74,30,0.11);border:1px solid rgba(138,184,64,0.13);
+  border-radius:4px;padding:1.4rem;
+}
+.chart-card h4{font-family:var(--font-head);font-weight:700;font-size:0.92rem;margin-bottom:0.2rem;}
+.chart-sub{font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.35);margin-bottom:1.1rem;}
+.chart-wrap{height:210px;position:relative;}
+
+/* divider */
+.dna-div{
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(138,184,64,0.18),transparent);
+  margin:0 2.5rem;
+}
+
+/* submit form */
+.submit-band{
+  background:rgba(45,74,30,0.16);
+  border-top:1px solid rgba(138,184,64,0.1);
+  border-bottom:1px solid rgba(138,184,64,0.1);
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;margin-top:1.75rem;}
+.ff{display:flex;flex-direction:column;gap:0.35rem;}
+.ff.full{grid-column:1/-1;}
+label{
+  font-family:var(--font-mono);font-size:0.67rem;letter-spacing:0.06em;
+  text-transform:uppercase;color:rgba(244,240,230,0.42);
+}
+input[type=text],input[type=email],textarea,select{
+  background:rgba(17,17,16,0.75);border:1px solid rgba(244,240,230,0.13);
+  color:var(--paper);padding:0.65rem 0.9rem;
+  font-family:var(--font-body);font-size:0.88rem;border-radius:2px;
+  outline:none;width:100%;transition:border-color 0.18s;
+}
+input[type=text]:focus,input[type=email]:focus,textarea:focus,select:focus{border-color:var(--lime);}
+textarea{resize:vertical;min-height:90px;}
+.upload-zone{
+  border:2px dashed rgba(138,184,64,0.2);border-radius:4px;
+  padding:2rem;text-align:center;cursor:pointer;
+  transition:border-color 0.2s,background 0.2s;margin-top:0.4rem;
+}
+.upload-zone:hover{border-color:rgba(138,184,64,0.4);background:rgba(138,184,64,0.04);}
+.up-txt{font-family:var(--font-mono);font-size:0.7rem;color:rgba(244,240,230,0.35);line-height:1.7;margin-top:0.4rem;}
+
+/* toast */
+.toast{
+  position:fixed;bottom:2rem;right:2rem;z-index:99999;
+  background:var(--moss);border:1px solid var(--lime);color:var(--paper);
+  padding:0.9rem 1.4rem;border-radius:4px;
+  font-family:var(--font-mono);font-size:0.75rem;
+  opacity:0;transform:translateY(30px);transition:all 0.3s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* comparison tool */
+.cmp-tool{
+  background:rgba(45,74,30,0.14);border:1px solid rgba(138,184,64,0.18);
+  border-radius:4px;overflow:hidden;
+}
+.cmp-head{
+  padding:1.3rem 1.75rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;
+}
+.cmp-head h3{font-family:var(--font-head);font-weight:700;font-size:1.05rem;}
+.cmp-body{
+  padding:1.75rem;display:grid;grid-template-columns:1fr 1fr;gap:1.75rem;
+}
+.cmp-col-lbl{
+  font-family:var(--font-mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;
+  margin-bottom:1.1rem;padding-bottom:0.45rem;border-bottom:2px solid;
+  display:flex;align-items:center;gap:0.45rem;
+}
+.cmp-col-lbl.rural{color:#6ab0db;border-color:rgba(106,176,219,0.5);}
+.cmp-col-lbl.urban{color:var(--lime-b);border-color:rgba(168,212,78,0.5);}
+.cmp-col-lbl .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;}
+.cmp-trait{margin-bottom:1.1rem;}
+.cmt-name{font-family:var(--font-mono);font-size:0.67rem;color:rgba(244,240,230,0.42);margin-bottom:0.35rem;}
+.cmt-val{font-family:var(--font-head);font-weight:700;font-size:1.3rem;line-height:1;}
+.cmt-val.rural{color:#6ab0db;}
+.cmt-val.urban{color:var(--lime-b);}
+.cmt-bar-wrap{height:5px;background:rgba(244,240,230,0.07);border-radius:3px;margin-top:0.45rem;overflow:hidden;}
+.cmt-bar{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.cmt-bar.r{background:#6ab0db;}
+.cmt-bar.u{background:var(--lime-b);}
+.cmp-insight{
+  grid-column:1/-1;background:rgba(193,123,46,0.1);
+  border:1px solid rgba(193,123,46,0.22);border-radius:4px;
+  padding:1.1rem 1.3rem;font-size:0.9rem;line-height:1.75;
+}
+.cmp-insight em{color:var(--amber-l);}
+.urb-ctrl{
+  padding:1.3rem 1.75rem;border-top:1px solid var(--border);
+  background:rgba(0,0,0,0.14);display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;
+}
+.urb-lbl{font-family:var(--font-mono);font-size:0.68rem;color:rgba(244,240,230,0.5);white-space:nowrap;}
+input[type=range]{
+  flex:1;min-width:140px;height:4px;padding:0;border:none;border-radius:2px;
+  background:rgba(244,240,230,0.12);appearance:none;-webkit-appearance:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+  background:var(--lime);cursor:pointer;
+}
+.urb-val{font-family:var(--font-head);font-weight:700;font-size:1.05rem;color:var(--lime-b);min-width:38px;text-align:right;}
+
+/* ══════════════════════════════
+   GLOBE / MAP PAGE
+══════════════════════════════ */
+#page-map{background:var(--ink2);}
+#globe-layout{
+  display:grid;grid-template-columns:1fr 340px;
+  height:100%;
+}
+#globe-stage{position:relative;overflow:hidden;}
+#globeMount{width:100%;height:100%;}
+#globe-loading{
+  position:absolute;inset:0;background:var(--ink2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:10;transition:opacity 0.5s;
+}
+.globe-spinner{
+  width:42px;height:42px;border:2px solid rgba(138,184,64,0.15);
+  border-top-color:var(--lime);border-radius:50%;
+  animation:spin 0.9s linear infinite;margin-bottom:1.2rem;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.globe-load-txt{font-family:var(--font-mono);font-size:0.72rem;color:rgba(244,240,230,0.4);letter-spacing:0.08em;}
+#globe-progress{
+  width:180px;height:2px;background:rgba(244,240,230,0.07);
+  border-radius:2px;margin-top:0.75rem;overflow:hidden;
+}
+#globe-prog-bar{height:100%;background:var(--lime);width:0%;transition:width 0.3s;}
+
+/* Globe title pill */
+#globe-title-pill{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  z-index:5;background:rgba(17,17,16,0.88);
+  border:1px solid rgba(138,184,64,0.2);border-radius:20px;
+  padding:0.35rem 1.1rem;
+  font-family:var(--font-mono);font-size:0.64rem;
+  color:rgba(244,240,230,0.45);letter-spacing:0.07em;white-space:nowrap;
+  pointer-events:none;
+}
+#globe-title-pill strong{color:var(--lime-b);font-family:var(--font-head);font-weight:700;}
+
+/* Globe controls bottom-left */
+#globe-controls{
+  position:absolute;bottom:20px;left:20px;z-index:5;
+  display:flex;flex-direction:column;gap:0.6rem;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+#globe-controls::-webkit-scrollbar{width:3px;}
+#globe-controls::-webkit-scrollbar-thumb{background:rgba(138,184,64,0.18);}
+
+.gc-section{
+  background:rgba(17,17,16,0.9);border:1px solid rgba(138,184,64,0.15);
+  border-radius:3px;padding:0.6rem 0.85rem;
+  font-family:var(--font-mono);font-size:0.62rem;
+}
+.gc-title{
+  color:rgba(244,240,230,0.35);letter-spacing:0.1em;text-transform:uppercase;
+  margin-bottom:0.55rem;font-size:0.58rem;
+}
+.gc-row{
+  display:flex;align-items:center;gap:0.55rem;padding:0.2rem 0;cursor:pointer;
+}
+.gc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.gc-name{color:rgba(244,240,230,0.65);font-size:0.63rem;}
+.gc-count{margin-left:auto;color:var(--lime-b);font-weight:700;font-family:var(--font-head);font-size:0.72rem;}
+.gc-row.off .gc-name{color:rgba(244,240,230,0.22);}
+.gc-row.off .gc-dot{opacity:0.25;}
+.gc-row.off .gc-count{color:rgba(244,240,230,0.2);}
+
+/* Globe info panel (right sidebar) */
+#globe-panel{
+  background:rgba(17,17,16,0.97);
+  border-left:1px solid rgba(138,184,64,0.13);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.panel-header{
+  padding:1.1rem 1.3rem;border-bottom:1px solid var(--border);
+  background:rgba(10,10,8,0.5);
+}
+.panel-header h3{
+  font-family:var(--font-head);font-weight:700;font-size:0.95rem;
+  letter-spacing:-0.01em;margin-bottom:0.15rem;
+}
+.panel-header p{font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.35);}
+.panel-scroll{flex:1;overflow-y:auto;padding:1.1rem 1.3rem;}
+.panel-scroll::-webkit-scrollbar{width:3px;}
+.panel-scroll::-webkit-scrollbar-thumb{background:rgba(138,184,64,0.18);}
+
+/* default empty state */
+#panel-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;padding:2rem;
+}
+.empty-globe-icon{
+  width:64px;height:64px;border-radius:50%;
+  background:rgba(138,184,64,0.07);border:1px solid rgba(138,184,64,0.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;margin-bottom:1.2rem;
+}
+#panel-empty p{font-family:var(--font-mono);font-size:0.68rem;color:rgba(244,240,230,0.3);line-height:1.8;}
+
+/* city panel content */
+#panel-city{display:none;}
+.city-name{font-family:var(--font-head);font-weight:800;font-size:1.4rem;letter-spacing:-0.02em;margin-bottom:0.15rem;}
+.city-country{font-family:var(--font-mono);font-size:0.68rem;color:rgba(244,240,230,0.42);margin-bottom:1.2rem;}
+.uhi-bar-row{margin-bottom:1.2rem;}
+.uhi-lbl{font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.4rem;}
+.uhi-temp-big{font-family:var(--font-head);font-weight:800;font-size:2.2rem;color:var(--amber-l);letter-spacing:-0.03em;line-height:1;}
+.uhi-temp-sub{font-family:var(--font-mono);font-size:0.64rem;color:rgba(244,240,230,0.35);margin-top:0.25rem;}
+.uhi-gradient-bar{
+  height:8px;border-radius:4px;margin-top:0.6rem;
+  background:linear-gradient(90deg,#1d4a1d,#c17b2e,#c0392b);
+  position:relative;
+}
+.uhi-indicator{
+  position:absolute;top:-3px;width:14px;height:14px;
+  border-radius:50%;background:var(--paper);border:2px solid var(--amber-l);
+  transform:translateX(-50%);transition:left 0.4s;
+}
+.panel-divider{height:1px;background:var(--border);margin:1.2rem 0;}
+.sp-nearby-title{font-family:var(--font-mono);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:rgba(244,240,230,0.35);margin-bottom:0.75rem;}
+.nearby-sp-row{
+  display:flex;align-items:center;gap:0.65rem;
+  padding:0.55rem 0;border-bottom:1px solid rgba(244,240,230,0.055);
+}
+.nearby-sp-row:last-child{border-bottom:none;}
+.nsr-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.nsr-info{flex:1;}
+.nsr-name{font-family:var(--font-head);font-weight:700;font-size:0.82rem;}
+.nsr-note{font-family:var(--font-mono);font-size:0.6rem;color:rgba(244,240,230,0.38);margin-top:1px;line-height:1.4;}
+.nsr-n{font-family:var(--font-head);font-weight:700;font-size:0.85rem;color:var(--lime-b);}
+
+/* occurrence dot panel */
+#panel-occ{display:none;}
+.occ-sp-name{font-family:var(--font-head);font-weight:700;font-size:1.15rem;margin-bottom:0.1rem;}
+.occ-sp-latin{font-style:italic;font-size:0.8rem;color:rgba(244,240,230,0.45);margin-bottom:1.1rem;}
+.occ-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:0.4rem 0;border-bottom:1px solid rgba(244,240,230,0.055);
+  font-family:var(--font-mono);font-size:0.7rem;
+}
+.occ-row:last-child{border-bottom:none;}
+.occ-k{color:rgba(244,240,230,0.38);text-transform:uppercase;letter-spacing:0.06em;}
+.occ-v{color:var(--paper);text-align:right;max-width:160px;}
+.occ-evo{
+  margin-top:1rem;padding:0.75rem 0.9rem;
+  background:rgba(138,184,64,0.07);
+  border-left:2px solid var(--lime);border-radius:2px;
+  font-size:0.78rem;line-height:1.6;color:rgba(244,240,230,0.6);
+}
+.gbif-link{
+  display:block;margin-top:1rem;padding:0.55rem;
+  background:rgba(138,184,64,0.1);border:1px solid rgba(138,184,64,0.22);
+  border-radius:3px;font-family:var(--font-mono);font-size:0.65rem;
+  color:var(--lime);text-align:center;text-decoration:none;letter-spacing:0.07em;
+  text-transform:uppercase;
+}
+.gbif-link:hover{background:rgba(138,184,64,0.18);}
+
+/* globe stats bar */
+#globe-stats-bar{
+  position:absolute;top:14px;right:14px;z-index:5;
+  display:flex;flex-direction:column;gap:0.35rem;
+  background:rgba(17,17,16,0.88);border:1px solid rgba(138,184,64,0.15);
+  border-radius:3px;padding:0.7rem 0.9rem;
+  font-family:var(--font-mono);font-size:0.62rem;
+}
+.gsb-row{display:flex;align-items:center;gap:0.5rem;}
+.gsb-dot{width:6px;height:6px;border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.gsb-txt{color:rgba(244,240,230,0.45);}
+.gsb-n{color:var(--lime-b);font-weight:700;font-family:var(--font-head);margin-left:0.25rem;}
+
+/* ══════════════════════════════
+   BIOLOGY PAGE
+══════════════════════════════ */
+#page-bio{color:var(--paper);}
+.bio-hero{
+  background:rgba(0,0,0,0.3);
+  border-bottom:1px solid rgba(138,184,64,0.12);
+  padding:4rem 2.5rem 3.5rem;
+  max-width:1140px;margin:0 auto;
+}
+.bio-hero h1{font-size:clamp(2.5rem,5vw,4.2rem);}
+.bio-hero h1 span{color:var(--lime-b);}
+.bio-hero p{
+  max-width:640px;margin-top:1.2rem;
+  color:rgba(244,240,230,0.7);font-size:1.05rem;line-height:1.85;
+}
+.bio-layout{
+  max-width:1140px;margin:0 auto;
+  display:grid;grid-template-columns:260px 1fr;
+  gap:0;min-height:calc(100vh - 200px);
+}
+.bio-nav{
+  border-right:1px solid var(--border);padding:2rem 1.5rem;
+  position:sticky;top:0;height:fit-content;
+}
+.bio-nav-title{
+  font-family:var(--font-mono);font-size:0.6rem;text-transform:uppercase;
+  letter-spacing:0.12em;color:rgba(244,240,230,0.28);margin-bottom:1rem;
+}
+.bio-nav-link{
+  display:flex;align-items:center;gap:0.6rem;
+  padding:0.45rem 0.6rem;border-radius:2px;
+  font-family:var(--font-mono);font-size:0.72rem;
+  color:rgba(244,240,230,0.5);cursor:pointer;
+  transition:color 0.18s,background 0.18s;text-decoration:none;
+  border-left:2px solid transparent;
+}
+.bio-nav-link:hover{color:var(--paper);background:rgba(255,255,255,0.03);}
+.bio-nav-link.cur{color:var(--lime-b);border-left-color:var(--lime);background:rgba(138,184,64,0.06);}
+.bio-content{padding:2.5rem 3rem 4rem;}
+.bio-section{margin-bottom:4rem;scroll-margin-top:2rem;}
+.bio-section h2{
+  font-size:clamp(1.7rem,3vw,2.4rem);margin-bottom:0.75rem;
+  color:var(--paper);
+}
+.bio-section h3{
+  font-family:var(--font-head);font-weight:700;font-size:1.15rem;
+  letter-spacing:-0.01em;margin:2rem 0 0.65rem;color:var(--lime-b);
+}
+.bio-section p{
+  color:rgba(244,240,230,0.72);line-height:1.9;margin-bottom:1.1rem;
+  font-size:0.97rem;
+}
+.bio-section strong{color:var(--paper);}
+.bio-callout{
+  background:rgba(45,74,30,0.22);border-left:3px solid var(--lime);
+  border-radius:0 4px 4px 0;padding:1.1rem 1.4rem;margin:1.5rem 0;
+  font-size:0.93rem;color:rgba(244,240,230,0.75);line-height:1.85;
+}
+.bio-callout strong{color:var(--lime-b);}
+.bio-warning{
+  background:rgba(193,123,46,0.12);border-left:3px solid var(--amber);
+  border-radius:0 4px 4px 0;padding:1.1rem 1.4rem;margin:1.5rem 0;
+  font-size:0.93rem;color:rgba(244,240,230,0.75);line-height:1.85;
+}
+.bio-warning strong{color:var(--amber-l);}
+.bio-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:0.85rem;}
+.bio-table th{
+  font-family:var(--font-mono);font-size:0.65rem;text-transform:uppercase;
+  letter-spacing:0.08em;color:rgba(244,240,230,0.4);
+  padding:0.5rem 0.75rem;border-bottom:1px solid rgba(138,184,64,0.15);
+  text-align:left;
+}
+.bio-table td{
+  padding:0.7rem 0.75rem;border-bottom:1px solid var(--border);
+  color:rgba(244,240,230,0.7);vertical-align:top;line-height:1.6;
+}
+.bio-table tr:last-child td{border-bottom:none;}
+.bio-table td:first-child{color:var(--lime-b);font-family:var(--font-head);font-weight:600;white-space:nowrap;}
+/* mechanism cards */
+.mech-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0;}
+.mech-card{
+  background:rgba(45,74,30,0.12);border:1px solid rgba(138,184,64,0.12);
+  border-radius:4px;padding:1.1rem 1.3rem;
+}
+.mech-card h4{
+  font-family:var(--font-head);font-weight:700;font-size:0.95rem;
+  color:var(--lime-b);margin-bottom:0.5rem;
+}
+.mech-card p{font-size:0.84rem;color:rgba(244,240,230,0.6);line-height:1.7;margin:0;}
+/* timeline */
+.timeline{list-style:none;position:relative;padding-left:1.5rem;margin:1.5rem 0;}
+.timeline::before{
+  content:'';position:absolute;left:4px;top:0;bottom:0;
+  width:1px;background:rgba(138,184,64,0.2);
+}
+.tl-item{position:relative;padding:0 0 1.5rem 1.2rem;}
+.tl-item::before{
+  content:'';position:absolute;left:-4px;top:5px;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--lime);box-shadow:0 0 0 3px rgba(138,184,64,0.15);
+}
+.tl-year{
+  font-family:var(--font-mono);font-size:0.65rem;color:var(--lime);
+  text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.2rem;
+}
+.tl-text{font-size:0.88rem;color:rgba(244,240,230,0.65);line-height:1.65;}
+.tl-text strong{color:var(--paper);}
+
+/* responsive */
+@media(max-width:900px){
+  #home-hero{grid-template-columns:1fr;}
+  .hero-right{display:none;}
+  .hero-left{padding:4rem 1.5rem 3rem;}
+  .chart-grid,.cmp-body,.mech-grid{grid-template-columns:1fr;}
+  #globe-layout{grid-template-columns:1fr;}
+  #globe-panel{display:none;}
+  .bio-layout{grid-template-columns:1fr;}
+  .bio-nav{display:none;}
+  .bio-content{padding:1.5rem;}
+  .form-grid{grid-template-columns:1fr;}
+  nav ul{display:none;}
+  .home-section{padding:3rem 1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo" onclick="goTo('home')">Spot<span>the</span>Shift</div>
+  <div class="nav-links">
+    <button class="nav-btn active" id="nb-home" onclick="goTo('home')">Home</button>
+    <button class="nav-btn" id="nb-map" onclick="goTo('map')">🌍 Globe</button>
+    <button class="nav-btn" id="nb-bio" onclick="goTo('bio')">Biology</button>
+  </div>
+</nav>
+
+<!-- SHELL -->
+<div id="shell">
+
+<!-- ══ HOME PAGE ══ -->
+<div class="page active" id="page-home">
+
+  <!-- hero -->
+  <div id="home-hero">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-left">
+      <div class="eyebrow">Citizen Science · Urban Evolution</div>
+      <h1>Spot<br>the <span class="word-shift">Shift</span></h1>
+      <p class="hero-desc">
+        Cities run the world's fastest evolution experiment. Track how urban pressure reshapes wildlife at the genetic level — from the heat islands of Georgia to the polluted estuaries of the East Coast.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-p" onclick="goTo('map')">🌍 Open Globe Map</button>
+        <button class="btn-o" onclick="goTo('bio')">Learn the Biology</button>
+        <a href="#submit-section" class="btn-o">Submit a Sighting</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="live-card">
+        <h3>// Key US Research Findings</h3>
+        <div class="stat-row"><span class="sl">Atlantic Killifish PCB tolerance</span><span class="sv">+8,000x<span class="sbadge sup">AHR mutant</span></span></div>
+        <div class="stat-row"><span class="sl">Eastern Gray Squirrel melanism</span><span class="sv">+40%<span class="sbadge sup">urban parks</span></span></div>
+        <div class="stat-row"><span class="sl">Green Anole toe-pad size</span><span class="sv">+18%<span class="sbadge sup">surface</span></span></div>
+        <div class="stat-row"><span class="sl">Acorn Ant heat tolerance</span><span class="sv">+1.5°C<span class="sbadge sup">UHI</span></span></div>
+        <div class="stat-row"><span class="sl">White Clover HCN allele freq.</span><span class="sv">↓ 38%<span class="sbadge sdn">urban</span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- species cards -->
+  <div class="home-section" id="species-section">
+    <div class="sec-label">Indicator Species</div>
+    <h2>10 Species. Real Shifts.</h2>
+    <p class="sec-intro">Confirmed urban-evolution cases with published data. The dataset is heavily focused on the American South and Eastern Seaboard, highlighting species actively shifting around us.</p>
+    <div class="species-grid" id="spGrid"></div>
+  </div>
+
+  <div class="dna-div"></div>
+
+  <!-- genetic comparison tool -->
+  <div class="home-section">
+    <div class="sec-label">Genetic Comparison Tool</div>
+    <h2>Urban vs. Rural Traits</h2>
+    <p class="sec-intro">Select a species and drag the urbanization slider to see how traits diverge from rural baseline populations.</p>
+    <div class="cmp-tool">
+      <div class="cmp-head">
+        <h3>Trait Comparison Engine</h3>
+        <select id="cmpSelect" onchange="updateCmp()">
+          <option value="0">Atlantic Killifish (US East Coast)</option>
+          <option value="1">Eastern Gray Squirrel (US/GA)</option>
+          <option value="2">Green Anole (US South/GA)</option>
+          <option value="3">Acorn Ant (Eastern US)</option>
+          <option value="4">White-footed Mouse (Eastern US)</option>
+          <option value="5">White Clover</option>
+          <option value="6">Cliff Swallow</option>
+          <option value="7">Dark-eyed Junco</option>
+          <option value="8">Italian Wall Lizard</option>
+          <option value="9">London Underground Mosquito</option>
+        </select>
+      </div>
+      <div class="cmp-body" id="cmpBody"></div>
+      <div class="urb-ctrl">
+        <span class="urb-lbl">Urbanization Intensity</span>
+        <input type="range" id="urbSlider" min="0" max="100" value="70" oninput="document.getElementById('urbVal').textContent=this.value+'%';updateCmp()">
+        <span class="urb-val" id="urbVal">70%</span>
+        <span class="urb-lbl" style="opacity:0.35">0 = deep rural · 100 = dense city core</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dna-div"></div>
+
+  <!-- charts -->
+  <div class="home-section">
+    <div class="sec-label">Evolutionary Data</div>
+    <h2>Allele Frequencies & Morphology Over Time</h2>
+    <p class="sec-intro">Published research data showing measurable genetic shifts in urban vs. rural populations, featuring core US case studies.</p>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h4>Atlantic Killifish — PCB Survival Rate</h4>
+        <p class="chart-sub">% surviving lethal toxin levels · Source: Reid et al.</p>
+        <div class="chart-wrap"><canvas id="ch7"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Eastern Gray Squirrel — Melanism</h4>
+        <p class="chart-sub">% Black fur morphs · Rural vs Urban Parks</p>
+        <div class="chart-wrap"><canvas id="ch8"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Green Anole — Toe Pad Lamellae</h4>
+        <p class="chart-sub">Sticky scales per pad · Source: Winchell et al.</p>
+        <div class="chart-wrap"><canvas id="ch5"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Acorn Ant — Heat Tolerance (CTmax)</h4>
+        <p class="chart-sub">Max survival temp (°C) · Source: Martin et al.</p>
+        <div class="chart-wrap"><canvas id="ch6"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>White Clover — HCN Allele Frequency</h4>
+        <p class="chart-sub">% cyanogenic plants · Source: Bender 2022</p>
+        <div class="chart-wrap"><canvas id="ch1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Cliff Swallow — Wing Length (mm)</h4>
+        <p class="chart-sub">Roadway vs. Cliff colony · Brown 2013</p>
+        <div class="chart-wrap"><canvas id="ch2"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Dark-eyed Junco — Corticosterone</h4>
+        <p class="chart-sub">Stress hormone response (ng/mL) · Atwell 2012</p>
+        <div class="chart-wrap"><canvas id="ch3"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h4>Wall Lizard — Head Width (% body length)</h4>
+        <p class="chart-sub">Pod Mrčaru island · Source: Herrel et al.</p>
+        <div class="chart-wrap"><canvas id="ch4"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dna-div"></div>
+
+  <!-- submit -->
+  <div class="submit-band" id="submit-section">
+    <div class="home-section">
+      <div class="sec-label">Submit a Sighting</div>
+      <h2>Add to the Database</h2>
+      <p class="sec-intro">Every submission contributes to a growing global map of urban evolution. If you spot a melanistic squirrel or an anole climbing glass, log it here.</p>
+      <div class="form-grid">
+        <div class="ff"><label>Your Name</label><input type="text" placeholder="Jane Doe"></div>
+        <div class="ff"><label>Email (optional)</label><input type="email" placeholder="jane@example.com"></div>
+        <div class="ff">
+          <label>Species Observed</label>
+          <select>
+            <option>Eastern Gray Squirrel (Sciurus carolinensis)</option>
+            <option>Green Anole (Anolis carolinensis)</option>
+            <option>White-footed Mouse (Peromyscus leucopus)</option>
+            <option>Atlantic Killifish (Fundulus heteroclitus)</option>
+            <option>Acorn Ant (Temnothorax curvispinosus)</option>
+            <option>White Clover (Trifolium repens)</option>
+            <option>Other / Unsure</option>
+          </select>
+        </div>
+        <div class="ff"><label>Location (City, State, Country)</label><input type="text" placeholder="Savannah, GA, USA"></div>
+        <div class="ff full"><label>Observed Traits / Notes</label><textarea placeholder="Describe anything unusual — black fur (melanism), behavior on smooth surfaces, habitat type…"></textarea></div>
+        <div class="ff full">
+          <label>Upload Photo</label>
+          <div class="upload-zone">
+            <div style="font-size:1.8rem;opacity:0.4">📷</div>
+            <div class="up-txt">Click to upload or drag &amp; drop · JPG, PNG up to 20 MB</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-p" style="margin-top:1.25rem" onclick="showToast()">Submit Sighting →</button>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div style="border-top:1px solid var(--border);padding:2.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;max-width:1140px;margin:0 auto;">
+    <div style="font-family:var(--font-head);font-weight:800;font-size:1.05rem;color:var(--lime-b);letter-spacing:-0.02em;">SpotTheShift <span style="color:rgba(244,240,230,0.28);font-size:0.85rem;font-weight:400">· Urban Evolution Tracker</span></div>
+    <div style="font-family:var(--font-mono);font-size:0.63rem;color:rgba(244,240,230,0.25);text-align:right;line-height:1.9">
+      Reid 2016 · Gibbs 2019 · Winchell 2016 · Munshi-South 2017 · Martin 2021<br>
+      Occurrence data: GBIF.org CC-BY 4.0 · UHI data: US EPA / NOAA
+    </div>
+  </div>
+
+</div><!-- end home -->
+
+<!-- ══ MAP / GLOBE PAGE ══ -->
+<div class="page" id="page-map">
+  <div id="globe-layout">
+    <div id="globe-stage">
+      <div id="globeMount"></div>
+      <div id="globe-loading">
+        <div class="globe-spinner"></div>
+        <div class="globe-load-txt" id="globeLoadTxt">Initializing globe…</div>
+        <div id="globe-progress"><div id="globe-prog-bar"></div></div>
+      </div>
+      <div id="globe-title-pill"><strong>SpotTheShift</strong> · Global Occurrence Map · Live GBIF Data</div>
+      <div id="globe-stats-bar">
+        <div class="gsb-row"><div class="gsb-dot" style="background:var(--lime)"></div><span class="gsb-txt">Records loaded</span><span class="gsb-n" id="gsb-total">—</span></div>
+        <div class="gsb-row"><div class="gsb-dot" style="background:var(--amber-l);animation-delay:0.5s"></div><span class="gsb-txt">Countries</span><span class="gsb-n" id="gsb-countries">—</span></div>
+        <div class="gsb-row"><div class="gsb-dot" style="background:#6ab0db;animation-delay:1s"></div><span class="gsb-txt">UHI Cities</span><span class="gsb-n">180+</span></div>
+      </div>
+      <div id="globe-controls">
+        <div class="gc-section">
+          <div class="gc-title">Species Layers</div>
+          <div id="gc-sp-list"></div>
+        </div>
+        <div class="gc-section" style="font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.3);line-height:1.7">
+          Drag to rotate · Scroll to zoom<br>Click any point for details
+        </div>
+      </div>
+    </div>
+    <div id="globe-panel">
+      <div class="panel-header">
+        <h3>Point Details</h3>
+        <p>Click any dot or city on the globe</p>
+      </div>
+      <div class="panel-scroll">
+        <div id="panel-empty">
+          <div class="empty-globe-icon">🌍</div>
+          <p>Click a colored occurrence dot to see<br>full GBIF record details.<br><br>Click a city ring to see<br>Urban Heat Island data and nearby species.</p>
+        </div>
+        <div id="panel-city"></div>
+        <div id="panel-occ"></div>
+      </div>
+    </div>
+  </div>
+</div><!-- end map -->
+
+<!-- ══ BIOLOGY PAGE ══ -->
+<div class="page" id="page-bio">
+  <div class="bio-hero">
+    <div class="sec-label">The Science</div>
+    <h1>Urban Evolution — <span>The Biology</span></h1>
+    <p>Two things you need to understand to make sense of everything SpotTheShift tracks: what evolution actually is, and how cities supercharge it.</p>
+  </div>
+  <div class="bio-layout">
+    <div class="bio-nav">
+      <div class="bio-nav-title">On this page</div>
+      <a class="bio-nav-link cur" href="#bio-evo">What is Evolution?</a>
+      <a class="bio-nav-link" href="#bio-uhi">Urban Heat Island</a>
+      <a class="bio-nav-link" href="#bio-chem">Chemical & Structural Pressure</a>
+    </div>
+    <div class="bio-content">
+
+      <!-- TOPIC 1: EVOLUTION -->
+      <div class="bio-section" id="bio-evo">
+        <div class="sec-label">Topic 1</div>
+        <h2>What Is Evolution?</h2>
+
+        <p>Evolution is simply <strong>change in a population over time</strong>. Not in one individual — populations don't evolve, individuals do. Evolution means that the <em>average traits</em> of an entire group shift from one generation to the next because some individuals survive and reproduce better than others.</p>
+
+        <p>Here's the core idea: every living thing inherits DNA from its parents, and that DNA is never copied perfectly. Small random errors — <strong>mutations</strong> — create variation. Some individuals end up slightly better suited to their environment than others. Those individuals live longer, have more offspring, and pass on their traits. Over generations, the population gradually looks more and more like its most successful members.</p>
+
+        <div class="bio-callout">
+          <strong>A simple example in the South:</strong> Imagine a population of Green Anoles living in a Georgia city. A few have a mutation that makes their toe pads slightly larger. On slippery glass windows and metal siding, these anoles can run faster, escaping predators and catching more bugs. They survive longer and have more babies. Their offspring inherit the larger toe pads. After 20 generations, most anoles in the city have large toe pads. The population <em>evolved</em>.
+        </div>
+
+        <h3>The four things evolution needs</h3>
+        <div class="mech-grid">
+          <div class="mech-card">
+            <h4>Variation</h4>
+            <p>Individuals must differ from each other. Without variation there's nothing to select between. Mutations constantly generate new combinations.</p>
+          </div>
+          <div class="mech-card">
+            <h4>Heritability</h4>
+            <p>Traits must be passed from parent to offspring. If advantageous traits weren't inherited, selection couldn't accumulate them.</p>
+          </div>
+          <div class="mech-card">
+            <h4>Selection pressure</h4>
+            <p>Something in the environment must make some traits more advantageous than others — predators, heat, toxins, or traffic.</p>
+          </div>
+          <div class="mech-card">
+            <h4>Time (generations)</h4>
+            <p>Change accumulates slowly. Species with fast generation times (insects, small fish, mice) can visibly evolve in decades.</p>
+          </div>
+        </div>
+
+        <h3>Evolution is not "trying to adapt"</h3>
+        <p>Evolution doesn't plan ahead. Organisms don't consciously change to fit their environment. Mutations happen randomly; selection is blind; what survives is just whatever happened to work in this environment, right now.</p>
+      </div>
+
+      <!-- TOPIC 2: UHI -->
+      <div class="bio-section" id="bio-uhi">
+        <div class="sec-label">Topic 2</div>
+        <h2>The Urban Heat Island Effect</h2>
+
+        <p>Spend an afternoon in downtown Atlanta or Savannah, then drive 30 minutes into the countryside. On a still summer evening, you'll physically feel the difference — the city is noticeably warmer. This is the <strong>Urban Heat Island (UHI) effect</strong>, and it's one of the clearest ways cities create the selection pressure that drives rapid evolution.</p>
+
+        <h3>Why cities are hotter</h3>
+        <p>Three things work together to trap heat in cities. First, <strong>dark surfaces</strong> like asphalt absorb far more solar radiation than forest canopy. Second, <strong>no cooling from plants</strong>: vegetation releases water vapor that cools the surrounding air. Paving it over removes that cooling effect entirely. Third, <strong>waste heat</strong> from human activity (car engines, air conditioners) dumps thermal energy directly into the urban atmosphere.</p>
+
+        <div class="bio-callout">
+          <strong>By the numbers:</strong> Cities in the American South, like Atlanta, Dallas, and Memphis, regularly see summer nighttime temperatures 3–5°C hotter than surrounding rural counties. Extreme sites can spike up to +8°C hotter.
+        </div>
+
+        <h3>How heat creates evolutionary pressure</h3>
+        <p>A temperature difference of 3–5°C rewrites the rules of survival for wildlife:</p>
+
+        <div class="bio-warning">
+          <strong>Insects hit thermal maximums.</strong> The Acorn Ant, found across the Eastern US and Georgia, lives inside small acorns. On urban asphalt, those acorns bake. Ants that cannot tolerate temperatures of 43°C (109°F) simply die. Evolution has rapidly favored ants with higher Critical Thermal Maximums (CTmax).
+        </div>
+
+        <p>Heat also advances the emergence timing of insects, decoupling them from their bird predators, and eliminates urban frost, which caused urban White Clover to genetically stop producing its protective cyanide (HCN) defense.</p>
+      </div>
+
+      <!-- TOPIC 3: CHEMICAL & STRUCTURAL -->
+      <div class="bio-section" id="bio-chem">
+        <div class="sec-label">Topic 3</div>
+        <h2>Chemical & Structural Pressures</h2>
+        
+        <p>Beyond temperature, human cities introduce novel chemicals and entirely new structural environments that have never existed in evolutionary history. When organisms can't flee these environments, they either die out or evolve at blinding speed.</p>
+
+        <h3>Toxic Selection: The Atlantic Killifish</h3>
+        <p>Along the US East Coast (from Virginia to New Jersey), industrial sites dumped lethal levels of polychlorinated biphenyls (PCBs) and dioxins into estuaries. These chemicals cause devastating heart deformities in fish embryos. But in heavily polluted areas like the Elizabeth River, the <strong>Atlantic Killifish</strong> survived. They evolved a genetic mutation that essentially "turns off" the AHR signaling pathway. This mutation makes them up to <strong>8,000 times more resistant</strong> to PCBs than unmutated fish. It is one of the most extreme cases of rapid vertebrate evolution ever recorded, directly driven by human pollution.</p>
+
+        <h3>Predation Relaxation & Thermoregulation: The Gray Squirrel</h3>
+        <p>In rural areas, <strong>Eastern Gray Squirrels</strong> with a mutation for black fur (melanism) stick out like sore thumbs to hawks and hunters. But in urban parks, hunting is banned, and natural predators are rare. Furthermore, in northern US cities, black fur absorbs more solar radiation, helping squirrels survive cold winters on frozen concrete. Without the heavy penalty of predation, the melanic allele is rapidly increasing in urban squirrel populations across the United States, reaching 40% or more in some city centers.</p>
+
+        <div style="margin-top:2rem;display:flex;gap:0.85rem;flex-wrap:wrap">
+          <button class="btn-p" onclick="goTo('map')">See It on the Globe →</button>
+          <button class="btn-o" onclick="goTo('home');setTimeout(()=>document.getElementById('submit-section').scrollIntoView({behavior:'smooth'}),400)">Submit a Sighting</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- end bio page -->
+
+</div><!-- end shell -->
+<div class="toast" id="toast">✓ Sighting submitted! Thank you, citizen scientist.</div>
+
+<!-- ══════════════════════════════════════
+  SCRIPTS
+══════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────
+// ROUTER
+// ─────────────────────────────────────────────────────────
+let currentPage = 'home';
+let globeInited = false;
+
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nb-' + page).classList.add('active');
+  currentPage = page;
+
+  if (page === 'map' && !globeInited) {
+    globeInited = true;
+    setTimeout(initGlobe, 80);
+  }
+  // re-scroll to top of page
+  document.getElementById('page-' + page).scrollTop = 0;
+}
+
+// ─────────────────────────────────────────────────────────
+// SPECIES DATA
+// ─────────────────────────────────────────────────────────
+const SPECIES = [
+  {
+    id:'killifish',name:'Atlantic Killifish',latin:'Fundulus heteroclitus',
+    taxonKey:2347676,color:'#16a085',icon:'🐟',badge:'scrit',badgeText:'Extreme Shift',
+    evoNote:'Evolved 8,000x tolerance to lethal PCB toxins via AHR mutation.',
+    traits:[
+      {lbl:'PCB survival rate',rBase:1,mult:80.0,unit:'%',cls:'a'},
+      {lbl:'AHR pathway sensitivity',rBase:100,mult:-0.95,unit:'idx',cls:'b'},
+      {lbl:'Embryo deformity rate',rBase:90,mult:-0.85,unit:'%',cls:''},
+    ],
+    src:'Reid et al. 2016 · Science · East Coast Estuaries',
+    insight:'In highly polluted East Coast estuaries (like the Elizabeth River, VA), killifish evolved a mutation shutting down their AHR pathway. This stops industrial toxins (PCBs) from causing lethal heart deformities, making urban fish up to 8,000 times more resistant to pollution than rural fish.'
+  },
+  {
+    id:'squirrel',name:'Eastern Gray Squirrel',latin:'Sciurus carolinensis',
+    taxonKey:2437273,color:'#7f8c8d',icon:'🐿️',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Urban populations show up to 40% melanism (black fur) due to relaxed predation.',
+    traits:[
+      {lbl:'Melanic (black) allele freq.',rBase:2,mult:19.0,unit:'%',cls:''},
+      {lbl:'Flight initiation distance',rBase:45,mult:-0.60,unit:'m',cls:'b'},
+      {lbl:'Winter heat absorption',rBase:60,mult:0.25,unit:'idx',cls:'a'},
+    ],
+    src:'Gibbs et al. 2019 · Urban Mammal Ecology',
+    insight:'In rural woods, black squirrels are easily spotted and killed by hawks and hunters. In urban parks across the US, hunting is banned and predators are rare. With relaxed predation (and better cold-weather thermoregulation in the north), the black fur mutation rapidly spreads in cities.'
+  },
+  {
+    id:'anole',name:'Green Anole',latin:'Anolis carolinensis',
+    taxonKey:2467713,color:'#2ecc71',icon:'🦎',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Evolved larger toe pads and more lamellae to grip smooth urban surfaces.',
+    traits:[
+      {lbl:'Lamellae count (hind)',rBase:26,mult:0.18,unit:'ct',cls:''},
+      {lbl:'Toe pad surface area',rBase:100,mult:0.22,unit:'idx',cls:'a'},
+      {lbl:'Heat tolerance (CTmax)',rBase:35,mult:0.06,unit:'°C',cls:'b'},
+    ],
+    src:'Winchell et al. 2016 · Urban Evolutionary Ecology',
+    insight:'Native to Georgia and the US South, urban anoles have measurably evolved longer limbs, wider toe pads, and more "sticky" scales (lamellae). This allows them to sprint up glass windows, painted metal, and smooth concrete where rural cousins would slip and fall.'
+  },
+  {
+    id:'ant',name:'Acorn Ant',latin:'Temnothorax curvispinosus',
+    taxonKey:1315570,color:'#d35400',icon:'🐜',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Urban ants evolved heat tolerance 1.5°C higher than rural populations.',
+    traits:[
+      {lbl:'Heat tolerance (CTmax)',rBase:41.5,mult:0.045,unit:'°C',cls:'a'},
+      {lbl:'Cold tolerance (CTmin)',rBase:4.0,mult:-0.30,unit:'°C',cls:''},
+      {lbl:'Foraging tempo',rBase:50,mult:0.25,unit:'idx',cls:'b'},
+    ],
+    src:'Martin et al. 2021 · Diamond Lab · US Urban Heat Studies',
+    insight:'Common in Eastern US cities and Georgia, these ants live inside hollow acorns. On asphalt, those acorns bake. Urban populations have rapidly evolved a Critical Thermal Maximum (CTmax) significantly higher than nearby forest populations to survive the UHI effect.'
+  },
+  {
+    id:'mouse',name:'White-footed Mouse',latin:'Peromyscus leucopus',
+    taxonKey:2437968,color:'#a6acaf',icon:'🐁',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Isolated park mice evolved to digest human food and tolerate heavy metals.',
+    traits:[
+      {lbl:'Metal tolerance alleles',rBase:5,mult:3.5,unit:'%',cls:'b'},
+      {lbl:'Lipid metabolism gene exp.',rBase:100,mult:0.40,unit:'idx',cls:'a'},
+      {lbl:'Gene flow with rural pop.',rBase:85,mult:-0.90,unit:'%',cls:''},
+    ],
+    src:'Munshi-South et al. 2017 · NYC Urban Ecology',
+    insight:'Trapped in urban parks surrounded by impassable roads in the Eastern US, these mice have genetically diverged from rural populations. They show strong selection in genes related to digesting fatty human food waste and resisting heavy metals found in urban soil.'
+  },
+  {
+    id:'clover',name:'White Clover',latin:'Trifolium repens',
+    taxonKey:5352251,color:'#8ab840',icon:'🍀',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Urban HCN allele freq. ↓ ~38% vs. rural baseline (Bender 2022)',
+    traits:[
+      {lbl:'HCN allele frequency',rBase:62,mult:-0.35,unit:'%',cls:''},
+      {lbl:'Heat-shock proteins',rBase:45,mult:0.20,unit:'%',cls:'a'},
+      {lbl:'Genetic diversity',rBase:78,mult:-0.12,unit:'index',cls:'b'},
+    ],
+    src:'Bender 2022 · Thompson et al. 2016 · Global Urban Evolution Project',
+    insight:'Urban clover shows dramatically reduced HCN (cyanogenic) allele frequency. In cold rural areas ~62% of plants produce cyanide. In hot city cores, frost risk drops so does the benefit of HCN — the allele falls to ~25–38% in dense urban areas.'
+  },
+  {
+    id:'swallow',name:'Cliff Swallow',latin:'Petrochelidon pyrrhonota',
+    taxonKey:2492038,color:'#6ab0db',icon:'🐦',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Roadway birds evolved wings ~4.2 mm shorter over 31 years.',
+    traits:[
+      {lbl:'Wing chord (mm)',rBase:112,mult:-0.038,unit:'mm',cls:'b'},
+      {lbl:'Road mortality rate',rBase:5,mult:-0.55,unit:'%',cls:''},
+      {lbl:'Maneuverability index',rBase:55,mult:0.28,unit:'index',cls:'a'},
+    ],
+    src:'Brown & Bomberger Brown 2013 · Current Biology',
+    insight:'Cliff Swallows nesting on road bridges across the US evolved shorter, rounded wings ideal for quick aerial maneuvers to escape traffic. Road-killed birds had significantly longer wings than survivors: direct evidence of ongoing directional selection.'
+  },
+  {
+    id:'junco',name:'Dark-eyed Junco',latin:'Junco hyemalis',
+    taxonKey:9596755,color:'#c084db',icon:'🐦‍⬛',badge:'bt',badgeText:'Tracked',
+    evoNote:'Urban populations show 28% reduced stress hormone response.',
+    traits:[
+      {lbl:'Corticosterone (ng/mL)',rBase:42,mult:-0.28,unit:'',cls:''},
+      {lbl:'Migration distance (km)',rBase:1800,mult:-0.60,unit:'',cls:'b'},
+      {lbl:'Human approach tolerance',rBase:20,mult:0.55,unit:'index',cls:'a'},
+    ],
+    src:'Atwell et al. 2012 · Adkins-Regan et al. 2014',
+    insight:'Urban US juncos show ~28% lower corticosterone spike when captured, lower breeding testosterone, shorter migrations, and dramatically reduced flight-initiation distance from humans — heritable changes confirmed across multiple generations.'
+  },
+  {
+    id:'lizard',name:'Italian Wall Lizard',latin:'Podarcis siculus',
+    taxonKey:2449851,color:'#e07060',icon:'🦎',badge:'bc',badgeText:'Confirmed',
+    evoNote:'Evolved larger heads + new cecal valves in just 36 years.',
+    traits:[
+      {lbl:'Relative head width (%BL)',rBase:14.2,mult:0.12,unit:'%',cls:''},
+      {lbl:'Cecal valve presence',rBase:0,mult:1.0,unit:'%',cls:'a'},
+      {lbl:'Plant matter in diet (%)',rBase:8,mult:0.65,unit:'%',cls:'b'},
+    ],
+    src:'Herrel et al. 2008 · PNAS',
+    insight:'Italian wall lizards introduced to a new environment evolved larger heads, stronger jaw muscles, and cecal valves — new gut structures for plant digestion — in just 36 years (~30 generations). One of the most dramatic documented cases of rapid vertebrate evolution.'
+  },
+  {
+    id:'mosquito',name:'London Underground Mosquito',latin:'Culex pipiens molestus',
+    taxonKey:1651891,color:'#e09840',icon:'🦟',badge:'bc',badgeText:'Speciated',
+    evoNote:'Underground form: 70%+ reduction in interbreeding compatibility.',
+    traits:[
+      {lbl:'Human host preference',rBase:10,mult:0.80,unit:'%',cls:''},
+      {lbl:'Overwintering diapause',rBase:95,mult:-0.85,unit:'%',cls:''},
+      {lbl:'Reproductive isolation',rBase:5,mult:0.90,unit:'%',cls:'a'},
+    ],
+    src:'Worrall 2018 · Byrne & Nichols 1999',
+    insight:'In ~100 years underground, Culex pipiens diverged so significantly it can no longer interbreed effectively with surface populations. Switched host from birds to humans, lost seasonal diapause, shows 30+ divergent genetic loci — a textbook incipient speciation event.'
+  }
+];
+
+// ─────────────────────────────────────────────────────────
+// UHI CITIES (180+) - Deeply expanded for Georgia & US South
+// ─────────────────────────────────────────────────────────
+const UHI = [
+  // Georgia Specific Focus
+  [33.749,-84.388,3.2,'Atlanta','USA'],
+  [32.0809,-81.0912,2.5,'Savannah','USA'],
+  [33.4709,-81.9748,2.3,'Augusta','USA'],
+  [32.4609,-84.9877,2.1,'Columbus','USA'],
+  [32.8407,-83.6324,2.0,'Macon','USA'],
+  [33.9519,-83.3576,1.8,'Athens','USA'],
+  [30.8327,-83.2785,1.8,'Valdosta','USA'],
+  [34.2570,-85.1647,1.5,'Rome','USA'],
+  [31.5785,-84.1557,1.9,'Albany','USA'],
+  [32.6130,-83.6242,1.7,'Warner Robins','USA'],
+  [34.7698,-84.9702,1.4,'Dalton','USA'],
+  [31.1499,-81.4915,1.6,'Brunswick','USA'],
+  [34.0754,-84.2941,2.2,'Alpharetta','USA'],
+  [33.9526,-84.5499,2.3,'Marietta','USA'],
+
+  // Deep South & Eastern Seaboard US
+  [34.7304,-86.5861,2.2,'Huntsville','USA'],
+  [33.5207,-86.8025,2.6,'Birmingham','USA'],
+  [30.3322,-81.6557,2.7,'Jacksonville','USA'],
+  [28.5383,-81.3792,3.1,'Orlando','USA'],
+  [27.9506,-82.4572,2.8,'Tampa','USA'],
+  [35.2271,-80.8431,2.9,'Charlotte','USA'],
+  [35.7796,-78.6382,2.5,'Raleigh','USA'],
+  [32.7765,-79.9311,2.2,'Charleston','USA'],
+  [38.2527,-85.7585,3.3,'Louisville','USA'],
+  [37.5407,-77.4360,2.8,'Richmond','USA'],
+  [39.2904,-76.6122,3.1,'Baltimore','USA'],
+  [29.9511,-90.0715,2.6,'New Orleans','USA'],
+  [35.1495,-90.0490,2.8,'Memphis','USA'],
+  [36.8529,-75.9780,2.4,'Virginia Beach','USA'], // Near Elizabeth River (Killifish)
+  [40.7357,-74.1724,3.1,'Newark','USA'], // Newark Bay (Killifish)
+  
+  // Major US
+  [40.7128,-74.006,3.2,'New York','USA'],
+  [34.0522,-118.2437,2.8,'Los Angeles','USA'],
+  [41.8781,-87.6298,3.5,'Chicago','USA'],
+  [29.7604,-95.3698,2.9,'Houston','USA'],
+  [33.4484,-112.074,4.2,'Phoenix','USA'],
+  [39.9526,-75.1652,3.0,'Philadelphia','USA'],
+  [29.4241,-98.4936,2.6,'San Antonio','USA'],
+  [32.7767,-96.797,2.7,'Dallas','USA'],
+  [36.1699,-115.1398,5.1,'Las Vegas','USA'],
+  [47.6062,-122.3321,2.1,'Seattle','USA'],
+  [39.7392,-104.9903,2.6,'Denver','USA'],
+  [36.1627,-86.7816,2.9,'Nashville','USA'],
+  [38.9072,-77.0369,3.8,'Washington DC','USA'],
+  [42.3601,-71.0589,2.9,'Boston','USA'],
+  [25.7617,-80.1918,3.0,'Miami','USA'],
+  [45.5051,-122.675,2.0,'Portland','USA'],
+  [37.7749,-122.4194,1.8,'San Francisco','USA'],
+  [41.4993,-81.6944,2.8,'Cleveland','USA'],
+
+  // Global Context (Shortened for brevity but retaining major anchors)
+  [43.6532,-79.3832,2.6,'Toronto','Canada'],
+  [19.4326,-99.1332,3.5,'Mexico City','Mexico'],
+  [51.5074,-0.1278,2.9,'London','UK'],
+  [48.8566,2.3522,3.3,'Paris','France'],
+  [52.52,13.405,3.0,'Berlin','Germany'],
+  [35.6762,139.6503,3.5,'Tokyo','Japan'],
+  [31.2304,121.4737,3.2,'Shanghai','China'],
+  [1.3521,103.8198,3.9,'Singapore','Singapore'],
+  [19.076,72.8777,2.8,'Mumbai','India'],
+  [25.2048,55.2708,5.6,'Dubai','UAE'],
+  [-23.5505,-46.6333,3.1,'São Paulo','Brazil'],
+  [-33.8688,151.2093,2.2,'Sydney','Australia']
+];
+
+// ─────────────────────────────────────────────────────────
+// RENDER SPECIES CARDS
+// ─────────────────────────────────────────────────────────
+function buildSpCards() {
+  const grid = document.getElementById('spGrid');
+  SPECIES.forEach(sp => {
+    const html = `<div class="sp-card">
+      <div class="sp-card-head">
+        <div>
+          <div class="sp-icon">${sp.icon}</div>
+          <div class="sp-name">${sp.name}</div>
+          <div class="sp-lat">${sp.latin}</div>
+        </div>
+        <span class="sp-badge ${sp.badge}">${sp.badgeText}</span>
+      </div>
+      <div class="sp-card-body">
+        <ul class="trait-list">
+          ${sp.traits.map(t=>{
+            const bw = Math.min(Math.abs(t.rBase)/130*100,88);
+            const d = t.rBase*t.mult;
+            const sign = d>0?'+':'';
+            const disp = Math.abs(d)>=10?Math.round(d):d.toFixed(1);
+            return `<li class="trait-item">
+              <span class="tl">${t.lbl}</span>
+              <div class="tw"><div class="tb ${t.cls}" style="width:${bw.toFixed(0)}%"></div></div>
+              <span class="td ${d>0?'tpos':'tneg'}">${sign}${disp}${t.unit}</span>
+            </li>`;
+          }).join('')}
+        </ul>
+      </div>
+      <div class="sp-src">${sp.src}</div>
+    </div>`;
+    grid.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+// ─────────────────────────────────────────────────────────
+// COMPARISON TOOL
+// ─────────────────────────────────────────────────────────
+function updateCmp() {
+  const idx = parseInt(document.getElementById('cmpSelect').value);
+  const pct = parseInt(document.getElementById('urbSlider').value);
+  const sp = SPECIES[idx];
+  const words = pct>70?'dense urban core':pct>40?'suburban area':pct>15?'semi-urban area':'near-rural setting';
+
+  let rCol='', uCol='';
+  sp.traits.forEach(t=>{
+    const rv = t.rBase;
+    const uv = rv + rv*t.mult*pct/100;
+    const mx = Math.max(Math.abs(rv),Math.abs(uv))*1.25||100;
+    const rw = (Math.abs(rv)/mx*100).toFixed(1);
+    const uw = (Math.abs(uv)/mx*100).toFixed(1);
+    const dec = Math.abs(rv)<20?1:0;
+    rCol += `<div class="cmp-trait"><div class="cmt-name">${t.lbl}</div>
+      <div class="cmt-val rural">${parseFloat(rv.toFixed(dec))}${t.unit}</div>
+      <div class="cmt-bar-wrap"><div class="cmt-bar r" style="width:${rw}%"></div></div></div>`;
+    uCol += `<div class="cmp-trait"><div class="cmt-name">${t.lbl}</div>
+      <div class="cmt-val urban">${parseFloat(uv.toFixed(dec))}${t.unit}</div>
+      <div class="cmt-bar-wrap"><div class="cmt-bar u" style="width:${uw}%"></div></div></div>`;
+  });
+
+  document.getElementById('cmpBody').innerHTML = `
+    <div class="cmp-col">
+      <div class="cmp-col-lbl rural"><span class="dot"></span> Rural baseline</div>${rCol}
+    </div>
+    <div class="cmp-col">
+      <div class="cmp-col-lbl urban"><span class="dot"></span> Urban (${pct}% urbanization)</div>${uCol}
+    </div>
+    <div class="cmp-insight" style="grid-column:1/-1">
+      <em>At ${pct}% urbanization (${words}):</em> ${sp.insight}
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────────────────
+const CDEFS = {
+  ticks:{color:'rgba(244,240,230,0.5)',font:{family:"'Space Mono',monospace",size:10}},
+  grid:{color:'rgba(244,240,230,0.055)'},
+  legend:{labels:{color:'rgba(244,240,230,0.55)',font:{family:"'Space Mono',monospace",size:10},boxWidth:10,padding:10}}
+};
+function mkChart(id,type,labels,datasets,yOpts={}) {
+  const ctx=document.getElementById(id).getContext('2d');
+  new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:CDEFS.legend},
+    scales:{x:{ticks:CDEFS.ticks,grid:CDEFS.grid},y:{ticks:CDEFS.ticks,grid:CDEFS.grid,...yOpts}}
+  }});
+}
+function buildCharts() {
+  mkChart('ch7','bar',['Pristine Site','Mod. Polluted','Elizabeth River (VA)'],[
+    {label:'Survival Rate in PCB Toxic Water (%)',data:[1.2,18.5,98.2],backgroundColor:'rgba(22, 160, 133,0.55)',borderColor:'#16a085',borderWidth:1}
+  ],{suggestedMin:0,suggestedMax:100});
+
+  mkChart('ch8','bar',['Rural Woods','Suburban','Urban Park Core'],[
+    {label:'Melanistic (Black) Frequency (%)',data:[2.1,12.4,38.5],backgroundColor:'rgba(127, 140, 141,0.55)',borderColor:'#7f8c8d',borderWidth:1}
+  ],{suggestedMin:0,suggestedMax:45});
+
+  mkChart('ch5','bar',['Forest/Rural','Suburban','Dense Urban'],[
+    {label:'Lamellae (sticky scales)',data:[25.2,26.8,29.7],backgroundColor:'rgba(46, 204, 113,0.55)',borderColor:'#2ecc71',borderWidth:1}
+  ],{suggestedMin:24,suggestedMax:31});
+  
+  mkChart('ch6','bar',['Rural Forest','City Edge','Urban Core'],[
+    {label:'CTmax (°C)',data:[41.5,42.2,43.0],backgroundColor:'rgba(211, 84, 0,0.55)',borderColor:'#d35400',borderWidth:1}
+  ],{suggestedMin:40,suggestedMax:44});
+
+  mkChart('ch1','line',['1970','1978','1986','1994','2002','2010','2018','2022'],[
+    {label:'Rural',data:[64,63,62,61,62,60,61,60],borderColor:'#6ab0db',backgroundColor:'rgba(106,176,219,0.07)',tension:0.3,fill:true,pointRadius:3},
+    {label:'Urban',data:[58,52,47,42,38,34,30,28],borderColor:'#a8d44e',backgroundColor:'rgba(168,212,78,0.07)',tension:0.3,fill:true,pointRadius:3}
+  ],{suggestedMin:20,suggestedMax:75});
+  
+  mkChart('ch2','bar',['1982','1988','1993','1999','2004','2010','2013'],[
+    {label:'Cliff colony',data:[112.1,112.4,111.9,112.2,112.3,112.0,112.1],backgroundColor:'rgba(106,176,219,0.55)',borderColor:'#6ab0db',borderWidth:1},
+    {label:'Roadway colony',data:[111.8,111.2,110.5,109.8,109.1,108.5,107.9],backgroundColor:'rgba(168,212,78,0.55)',borderColor:'#a8d44e',borderWidth:1}
+  ],{suggestedMin:106,suggestedMax:115});
+  
+  mkChart('ch3','bar',['Baseline','30 min stress','60 min stress'],[
+    {label:'Rural',data:[8.2,42.1,38.5],backgroundColor:'rgba(106,176,219,0.55)',borderColor:'#6ab0db',borderWidth:1},
+    {label:'Urban',data:[6.9,30.4,24.1],backgroundColor:'rgba(168,212,78,0.55)',borderColor:'#a8d44e',borderWidth:1}
+  ]);
+  
+  mkChart('ch4','line',['1971','1980','1990','1998','2007'],[
+    {label:'Source (Italy)',data:[14.1,14.2,14.1,14.3,14.2],borderColor:'#6ab0db',backgroundColor:'rgba(106,176,219,0.07)',tension:0.3,fill:true,pointRadius:4},
+    {label:'Introduced',data:[14.1,14.5,15.1,15.7,15.9],borderColor:'#a8d44e',backgroundColor:'rgba(168,212,78,0.07)',tension:0.3,fill:true,pointRadius:4}
+  ]);
+}
+
+// ─────────────────────────────────────────────────────────
+// GLOBE
+// ─────────────────────────────────────────────────────────
+let occurrences = [];
+let activeSpIds = new Set(SPECIES.map(s=>s.id));
+let globeObj = null;
+
+function uhiColor(v) {
+  if (v<2) return 'rgba(138,184,64,0.55)';
+  if (v<3) return 'rgba(193,123,46,0.65)';
+  if (v<4) return 'rgba(192,57,43,0.70)';
+  return 'rgba(200,0,0,0.80)';
+}
+
+function setGlobeData() {
+  if (!globeObj) return;
+  const visOcc = occurrences.filter(r=>activeSpIds.has(r._spId));
+
+  // Build points: occurrences + UHI cities
+  const pts = [
+    ...visOcc.map(r=>({
+      type:'occ',
+      lat:r.decimalLatitude,
+      lng:r.decimalLongitude,
+      color:r._spColor,
+      size:0.35,
+      data:r
+    })),
+    ...UHI.map(u=>({
+      type:'city',
+      lat:u[0],lng:u[1],
+      uhi:u[2],city:u[3],country:u[4],
+      color:uhiColor(u[2]),
+      size:0.55,
+      data:u
+    }))
+  ];
+
+  globeObj
+    .pointsData(pts)
+    .pointLat('lat')
+    .pointLng('lng')
+    .pointColor('color')
+    .pointRadius('size')
+    .pointAltitude(d=>d.type==='city'?0.005:0.001)
+    .onPointClick(onPointClick);
+
+  // stats
+  const countries = new Set(occurrences.filter(r=>activeSpIds.has(r._spId)).map(r=>r.countryCode||r.country)).size;
+  document.getElementById('gsb-total').textContent = visOcc.length.toLocaleString();
+  document.getElementById('gsb-countries').textContent = countries;
+}
+
+function onPointClick(pt) {
+  document.getElementById('panel-empty').style.display = 'none';
+  document.getElementById('panel-city').style.display = 'none';
+  document.getElementById('panel-occ').style.display = 'none';
+
+  if (pt.type === 'city') showCityPanel(pt);
+  else showOccPanel(pt);
+}
+
+function uhiExplain(uhi, city) {
+  if (uhi >= 5) return `${city}'s heat island is extreme — the city core is over ${uhi}°C hotter than the surrounding countryside. This intense selection pressure strongly favors heat-resistant traits and drives rapid allele frequency shifts.`;
+  if (uhi >= 4) return `At +${uhi}°C, ${city} sits in the high-intensity UHI zone. This thermal difference is strong enough to eliminate frost from urban winters entirely, directly driving shifts like the loss of cyanogenic HCN alleles in White Clover.`;
+  if (uhi >= 3) return `${city}'s +${uhi}°C UHI is moderate-to-strong. It alters competitive outcomes, reduces winter stress on urban insects (like the Acorn Ant), and changes selection dynamics. Cities at this intensity show detectable evolutionary divergence within decades.`;
+  if (uhi >= 2) return `${city} has a mild-to-moderate UHI effect at +${uhi}°C. While subtler than denser cities, this is still enough to change which organisms survive mild winters and shift plant frost-tolerance requirements over decades.`;
+  return `${city}'s UHI is relatively low at +${uhi}°C. Evolutionary pressure from heat alone is modest here, but other urban factors — traffic, chemical pollution, noise, habitat fragmentation — still drive powerful selection.`;
+}
+
+function showCityPanel(pt) {
+  const [lat,lng,uhi,city,country] = pt.data;
+  const uPct = Math.min(((uhi-1)/5.5*100),97).toFixed(0);
+  const uhiTier = uhi>=5?'Extreme':uhi>=4?'High':uhi>=3?'Moderate':'Low';
+  const tierColor = uhi>=5?'#e07060':uhi>=4?'#c0392b':uhi>=3?'var(--amber-l)':'var(--lime)';
+
+  const nearby = {};
+  occurrences.forEach(r=>{
+    if(Math.abs(r.decimalLatitude-lat)<5&&Math.abs(r.decimalLongitude-lng)<7)
+      nearby[r._spId]=(nearby[r._spId]||0)+1;
+  });
+
+  const totalNearby = Object.values(nearby).reduce((a,b)=>a+b,0);
+
+  const spRows = SPECIES.map(sp=>{
+    const n = nearby[sp.id]||0;
+    let expectedShift = "Moderate pressure";
+    if (sp.id==='killifish') expectedShift = `Pollution selection: Very high in local industrial estuaries.`;
+    else if (sp.id==='squirrel') expectedShift = `Predation relaxation: Selection favors melanism in parks.`;
+    else if (sp.id==='clover') expectedShift = `Expected HCN drop: ~${Math.round(38*Math.min(uhi/4,1))}% below rural freq.`;
+    else if (sp.id==='anole') expectedShift = `Surface selection: Strong pressure for larger toe pads.`;
+    else if (sp.id==='ant') expectedShift = `Heat tolerance: CTmax likely +${(1.5*Math.min(uhi/3.5, 1)).toFixed(1)}°C.`;
+    else if (sp.id==='mouse') expectedShift = `Isolation: High risk of genetic divergence in parks.`;
+    else if (sp.id==='swallow') expectedShift = `Traffic pressure: Selection for short wings.`;
+    
+    return `<div class="nearby-sp-row">
+      <div class="nsr-dot" style="background:${sp.color}"></div>
+      <div class="nsr-info">
+        <div class="nsr-name">${sp.icon||''} ${sp.name}</div>
+        <div class="nsr-note">${expectedShift}</div>
+      </div>
+      <div class="nsr-n" style="font-size:0.72rem">${n>0?`<span style="color:var(--lime-b)">${n}</span> obs.`:'<span style="opacity:0.3">—</span>'}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('panel-city').innerHTML = `
+    <div class="city-name">${city}</div>
+    <div class="city-country">${country} · ${totalNearby} nearby observations in database</div>
+
+    <div style="margin:1rem 0;padding:1rem;background:rgba(193,123,46,0.1);border:1px solid rgba(193,123,46,0.2);border-radius:4px;">
+      <div class="uhi-lbl" style="margin-bottom:0.5rem">Urban Heat Island Intensity</div>
+      <div style="display:flex;align-items:baseline;gap:0.6rem;margin-bottom:0.3rem">
+        <div class="uhi-temp-big" style="color:${tierColor}">+${uhi}°C</div>
+        <span style="font-family:var(--font-mono);font-size:0.65rem;padding:2px 8px;border-radius:2px;background:${tierColor}22;color:${tierColor}">${uhiTier}</span>
+      </div>
+      <div class="uhi-temp-sub">above surrounding rural area · EPA/NOAA data</div>
+      <div class="uhi-gradient-bar" style="margin-top:0.75rem">
+        <div class="uhi-indicator" style="left:${uPct}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:0.58rem;color:rgba(244,240,230,0.22);margin-top:0.3rem">
+        <span>+1°C</span><span>+3°C</span><span>+6°C</span>
+      </div>
+    </div>
+
+    <div style="font-size:0.84rem;line-height:1.8;color:rgba(244,240,230,0.68);margin-bottom:1rem;padding:0.85rem;background:rgba(45,74,30,0.15);border-left:2px solid var(--lime);border-radius:2px;">
+      <strong style="color:var(--lime-b);display:block;margin-bottom:0.3rem;font-family:var(--font-head);font-size:0.82rem">What does this mean for evolution?</strong>
+      ${uhiExplain(uhi, city)}
+    </div>
+
+    <div class="panel-divider"></div>
+    <div class="sp-nearby-title">Species in this city's evolution zone</div>
+    ${spRows}
+    <div class="panel-divider"></div>
+    <div style="font-family:var(--font-mono);font-size:0.62rem;color:rgba(244,240,230,0.28);line-height:1.8">
+      UHI source: US EPA Heat Island Effect compendium + NOAA surface temp. analysis
+    </div>`;
+  document.getElementById('panel-city').style.display = 'block';
+}
+
+const SP_EXPLAINERS = {
+  killifish: (r) => `The Atlantic Killifish highlights "toxic selection." In East Coast estuaries heavily polluted with industrial PCBs and dioxins, unmutated fish suffer lethal heart deformities. These local populations rapidly evolved an AHR pathway mutation that grants extreme tolerance to these poisons, allowing them to survive where no other fish can.`,
+  squirrel: (r) => `Urban Eastern Gray Squirrels are a textbook case of predation relaxation. In cities, hawks are rarer and hunting is banned, so the dark melanic fur mutation is no longer selected against. In cold-winter cities, the black fur also helps absorb solar radiation on frozen asphalt, driving the allele frequency up.`,
+  clover: (r) => `This is a real, verified observation of White Clover. In this area, urban clover populations are likely carrying <strong>fewer HCN (cyanide-producing) alleles</strong> than nearby rural populations. Because cities are warmer, frost risk drops, making the metabolic cost of cyanide production unnecessary for survival.`,
+  anole: (r) => `The Green Anole is a familiar sight in Georgia and the US South. This record points to an area where anoles are experiencing habitat structural changes. To navigate smooth glass and metal architecture, urban lizards actively evolve longer limbs and larger toe pads with more sticky scales.`,
+  ant: (r) => `The Acorn Ant is heavily studied in Eastern US cities. Living inside small acorns makes them highly vulnerable to the baking heat of asphalt. This observation likely represents a population that has evolved a measurably higher Critical Thermal Maximum (CTmax) to survive the Urban Heat Island.`,
+  mouse: (r) => `White-footed mice in urban areas are trapped by impassable roads. This isolation stops gene flow. Here, they undergo rapid genetic divergence, evolving resistance to heavy metals in the soil and upregulating genes to digest the heavy fats of human food waste.`,
+  mosquito: (r) => `This observation documents the presence of <em>Culex pipiens</em>. When isolated underground or in dense urban infrastructure, they experience year-round warm temperatures and a shift toward human hosts, driving rapid genetic divergence and even speciation.`,
+  swallow: (r) => `Cliff Swallows nesting on road bridges are under strong directional selection for shorter wings. Longer-winged birds struggle to make the rapid, tight aerial turns needed to dodge cars. This dot represents a population that may be actively shifting its morphology to survive traffic.`,
+  junco: (r) => `Urban Dark-eyed Juncos show significantly blunted stress hormone responses and reduced flight initiation distance. These are heritable genetic changes showing how chronic human presence rewires vertebrate physiology.`,
+  lizard: (r) => `Wall Lizards demonstrate how quickly vertebrates can evolve. When introduced to new, plant-rich environments (or adapting to urban gardens), they can evolve entirely new gut structures (cecal valves) for plant digestion in just a few dozen generations.`
+};
+
+function showOccPanel(pt) {
+  const r = pt.data;
+  const sp = SPECIES.find(s=>s.id===r._spId);
+  const country = r.country||r.countryCode||'—';
+  const locality = r.locality?r.locality.slice(0,55):(r.stateProvince||'—');
+  const date = r.eventDate?r.eventDate.slice(0,10):(r.year||'—');
+  const recorder = r.recordedBy?r.recordedBy.slice(0,45):(r.institutionCode||'—');
+  const basis = (r.basisOfRecord||'—').replace(/_/g,' ').toLowerCase();
+  const basisLabel = basis.includes('human') ? 'human observation' : basis.includes('preserved') ? 'museum specimen' : basis.includes('machine') ? 'machine identified' : basis;
+
+  const explainer = SP_EXPLAINERS[sp.id] ? SP_EXPLAINERS[sp.id](r) : sp.evoNote;
+
+  document.getElementById('panel-occ').innerHTML = `
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.85rem">
+      <div style="font-size:1.6rem;line-height:1">${sp.icon||''}</div>
+      <div>
+        <div class="occ-sp-name" style="color:${sp.color}">${sp.name}</div>
+        <div class="occ-sp-latin">${sp.latin}</div>
+      </div>
+      <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.6rem;padding:3px 7px;border-radius:2px;background:${sp.color}22;color:${sp.color};border:1px solid ${sp.color}44">${sp.badgeText}</span>
+    </div>
+
+    <div style="padding:0.85rem;background:rgba(45,74,30,0.18);border-left:2px solid ${sp.color};border-radius:2px;margin-bottom:1rem;font-size:0.83rem;line-height:1.8;color:rgba(244,240,230,0.72);">
+      <strong style="display:block;font-family:var(--font-head);font-size:0.8rem;color:var(--lime-b);margin-bottom:0.35rem">Why does this observation matter?</strong>
+      ${explainer}
+    </div>
+
+    <div class="sp-nearby-title" style="margin-bottom:0.6rem">Record Details</div>
+    <div class="occ-row"><span class="occ-k">Location</span><span class="occ-v">${locality}, ${country}</span></div>
+    <div class="occ-row"><span class="occ-k">Coordinates</span><span class="occ-v">${r.decimalLatitude.toFixed(4)}, ${r.decimalLongitude.toFixed(4)}</span></div>
+    <div class="occ-row"><span class="occ-k">Date observed</span><span class="occ-v">${date}</span></div>
+    <div class="occ-row"><span class="occ-k">Recorded by</span><span class="occ-v">${recorder}</span></div>
+    <div class="occ-row"><span class="occ-k">Record type</span><span class="occ-v">${basisLabel}</span></div>
+    ${r.institutionCode?`<div class="occ-row"><span class="occ-k">Institution</span><span class="occ-v">${r.institutionCode}</span></div>`:''}
+    <div class="panel-divider"></div>
+    <div style="font-family:var(--font-mono);font-size:0.65rem;color:rgba(244,240,230,0.28);line-height:1.7;margin-bottom:0.75rem">
+      This record is sourced from GBIF.org (Global Biodiversity Information Facility). Each dot = one verified sighting.
+    </div>
+    <a class="gbif-link" href="https://www.gbif.org/occurrence/${r.key}" target="_blank">View Full Record on GBIF.org →</a>`;
+  document.getElementById('panel-occ').style.display = 'block';
+}
+
+async function fetchGBIF(sp) {
+  // Fetch slightly fewer pages to keep performance high, 1 page is 300 records
+  const pages = (sp.taxonKey===5352251 || sp.taxonKey===2492038 || sp.taxonKey===2437273) ? 2 : 1;
+  const recs = [];
+  for (let p=0;p<pages;p++) {
+    try {
+      const url = `https://api.gbif.org/v1/occurrence/search?taxonKey=${sp.taxonKey}&hasCoordinate=true&limit=300&offset=${p*300}`;
+      const r = await fetch(url);
+      if (!r.ok) break;
+      const data = await r.json();
+      (data.results||[]).forEach(rec=>{
+        if (!rec.decimalLatitude||!rec.decimalLongitude) return;
+        if (Math.abs(rec.decimalLatitude)>90) return;
+        rec._spId=sp.id; rec._spColor=sp.color; rec._spName=sp.name;
+        rec._spLatin=sp.latin; rec.evoNote=sp.evoNote;
+        recs.push(rec);
+      });
+    } catch(e){break;}
+  }
+  return recs;
+}
+
+async function loadGBIF() {
+  const loadTxt = document.getElementById('globeLoadTxt');
+  const progBar = document.getElementById('globe-prog-bar');
+  for (let i=0;i<SPECIES.length;i++) {
+    const sp=SPECIES[i];
+    loadTxt.textContent = `Fetching ${sp.name} from GBIF…`;
+    progBar.style.width = ((i/SPECIES.length)*100).toFixed(0)+'%';
+    const recs = await fetchGBIF(sp);
+    occurrences.push(...recs);
+    setGlobeData();
+    progBar.style.width = (((i+1)/SPECIES.length)*100).toFixed(0)+'%';
+  }
+  loadTxt.textContent = `${occurrences.length.toLocaleString()} records loaded!`;
+  progBar.style.background='var(--lime-b)';
+  setTimeout(()=>{
+    const el = document.getElementById('globe-loading');
+    el.style.opacity='0';
+    setTimeout(()=>el.style.display='none',500);
+  },800);
+}
+
+function buildGCList() {
+  const list = document.getElementById('gc-sp-list');
+  SPECIES.forEach(sp=>{
+    const row = document.createElement('div');
+    row.className = 'gc-row';
+    row.id = 'gcr-'+sp.id;
+    row.innerHTML = `<div class="gc-dot" style="background:${sp.color}"></div>
+      <span class="gc-name">${sp.name}</span>
+      <span class="gc-count" id="gcc-${sp.id}">—</span>`;
+    row.onclick = ()=>{
+      if(activeSpIds.has(sp.id)){activeSpIds.delete(sp.id);row.classList.add('off');}
+      else{activeSpIds.add(sp.id);row.classList.remove('off');}
+      setGlobeData();
+    };
+    list.appendChild(row);
+  });
+}
+
+function updateGCCounts() {
+  SPECIES.forEach(sp=>{
+    const el=document.getElementById('gcc-'+sp.id);
+    if(el) el.textContent=occurrences.filter(r=>r._spId===sp.id).length.toLocaleString();
+  });
+}
+
+function initGlobe() {
+  const container = document.getElementById('globeMount');
+  const w = container.offsetWidth;
+  const h = container.offsetHeight||window.innerHeight-58;
+
+  globeObj = Globe({animateIn:true})(container)
+    .width(w).height(h)
+    .backgroundColor('rgba(0,0,0,0)')
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .atmosphereColor('rgba(138,184,64,0.18)')
+    .atmosphereAltitude(0.15)
+    .pointsData([])
+    .pointLat('lat').pointLng('lng').pointColor('color').pointRadius('size')
+    .pointAltitude(0.001)
+    .onPointClick(onPointClick);
+
+  // auto-rotate
+  globeObj.controls().autoRotate = true;
+  globeObj.controls().autoRotateSpeed = 0.4;
+  
+  // start viewing over Georgia/US East Coast
+  globeObj.pointOfView({ lat: 33.7, lng: -84.3, altitude: 1.4 }, 1000);
+
+  window.addEventListener('resize',()=>{
+    globeObj.width(container.offsetWidth).height(container.offsetHeight||window.innerHeight-58);
+  });
+
+  buildGCList();
+  loadGBIF().then(updateGCCounts);
+}
+
+// ─────────────────────────────────────────────────────────
+// MISC
+// ─────────────────────────────────────────────────────────
+function showToast() {
+  const t=document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ─────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────
+buildSpCards();
+updateCmp();
+buildCharts();
+</script>
+</body>
+</html>
